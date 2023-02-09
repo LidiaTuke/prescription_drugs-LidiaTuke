@@ -217,6 +217,21 @@ CROSS JOIN drug
 WHERE specialty_description = 'Cardiology'
 LIMIT 5;
  --   c. Which drugs are in the top five prescribed by Family Practice prescribers and Cardiologists? Combine what you did for parts a and b into a single query to answer this question.
+(SELECT DISTINCT generic_name,
+       npi,
+	   specialty_description 
+FROM prescriber AS p2
+CROSS JOIN drug
+WHERE specialty_description = 'Family Practice'
+LIMIT 5)
+UNION
+(SELECT DISTINCT generic_name,
+       npi,
+	   specialty_description 
+FROM prescriber AS p2
+CROSS JOIN drug
+WHERE specialty_description = 'Cardiology'
+LIMIT 5);
 -- 3. Your goal in this question is to generate a list of the top prescribers in each of the major metropolitan areas of Tennessee.
   --  a. First, write a query that finds the top 5 prescribers in Nashville in terms of the total number of claims (total_claim_count) across all drugs. Report the npi, the total number of claims, and include a column showing the city.
 SELECT DISTINCT npi,
@@ -240,7 +255,25 @@ ORDER BY total_claim_count DESC
 LIMIT 5;
 
   --  c. Combine your results from a and b, along with the results for Knoxville and Chattanooga.
-  
+(SELECT DISTINCT npi,
+       total_claim_count,
+	   state
+FROM prescription AS p
+CROSS JOIN fips_county AS f
+WHERE state = 'TN'
+ORDER BY total_claim_count DESC
+LIMIT 5)
+UNION
+(SELECT DISTINCT npi,
+       total_claim_count,
+	   cbsaname
+FROM prescription AS p
+CROSS JOIN cbsa AS c
+WHERE cbsaname LIKE '%Memphis'
+    OR cbsaname LIKE '%Knoxville%'
+	OR cbsaname LIKE '%Chattanooga%'
+ORDER BY total_claim_count DESC
+LIMIT 5);
 -- 4. Find all counties which had an above-average number of overdose deaths. Report the county name and number of overdose deaths.
 SELECT county,
        deaths
@@ -260,13 +293,13 @@ USING(fipscounty)
 WHERE state = 'TN'
 GROUP BY state;
  --   b. Build off of the query that you wrote in part a to write a query that returns for each county that county's name, its population, and the percentage of the total population of Tennessee that is contained in that county.
-SELECT SUM(CASE WHEN state = 'TN' THEN population END) AS tn_pop,
-       SUM(CASE WHEN state = 'TN' THEN population END) * 100 / SUM(population) AS num_pop,
-       state,
-	   county,
-	   population
+SELECT DISTINCT county,
+       population,
+	   SUM(CASE WHEN state = 'TN' THEN population END) AS tn_pop,
+       SUM(population),
+       SUM(CASE WHEN state = 'TN' THEN population END) * 100 / SUM(population) AS num_pop
+	  
 FROM population AS p 
-INNER JOIN fips_county
+INNER JOIN fips_county AS f
 USING(fipscounty)
-GROUP BY state, county,
-	   population;
+GROUP BY county, population;
